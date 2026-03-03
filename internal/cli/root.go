@@ -8,11 +8,12 @@ import (
 
 // Global flag values shared across all commands.
 var (
-	flagSpec    string
-	flagPlan    string
-	flagOutput  string
-	flagJSON    bool
-	flagVerbose bool
+	flagSpec        string
+	flagPlan        string
+	flagOutput      string
+	flagJSON        bool
+	flagVerbose     bool
+	flagEmitMetrics bool
 )
 
 // New returns the root cobra command for clarion.
@@ -49,6 +50,7 @@ func New(version, commit, built string) *cobra.Command {
 	root.PersistentFlags().StringVar(&flagOutput, "output", "./docs", "Output directory for generated files")
 	root.PersistentFlags().BoolVar(&flagJSON, "json", false, "Emit structured JSON to stdout")
 	root.PersistentFlags().BoolVar(&flagVerbose, "verbose", false, "Print step-by-step processing details to stderr")
+	root.PersistentFlags().BoolVar(&flagEmitMetrics, "emit-metrics", false, "Print token usage and cost metrics after command completion")
 
 	root.AddCommand(
 		newPackCmd(),

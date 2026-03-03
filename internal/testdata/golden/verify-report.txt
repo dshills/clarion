@@ -1,0 +1,5 @@
+Section: architecture
+High: 100%
+Medium: 0%
+Low: 0%
+FailedClaims: 0

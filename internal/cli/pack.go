@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -14,6 +15,16 @@ import (
 	"github.com/clarion-dev/clarion/internal/render"
 	"github.com/clarion-dev/clarion/internal/scanner"
 )
+
+// PackResult is the JSON output emitted when --json is active.
+type PackResult struct {
+	OutputFiles          []string `json:"output_files"`
+	TokensUsed           int      `json:"tokens_used"`
+	EstimatedCost        float64  `json:"estimated_cost"`
+	DurationMS           int64    `json:"duration_ms"`
+	VerificationFailures int      `json:"verification_failures"`
+	FactModelPath        string   `json:"fact_model_path"`
+}
 
 func newPackCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -37,6 +48,7 @@ func newPackEnterpriseCmd() *cobra.Command {
 		Use:   "enterprise",
 		Short: "Generate all documentation sections and clarion-meta.json",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			start := time.Now()
 			ctx := context.Background()
 
 			// 1. Validate --spec exists and is readable.
@@ -102,15 +114,18 @@ func newPackEnterpriseCmd() *cobra.Command {
 
 			// 9. Generate all four documentation sections.
 			sections := []string{"architecture", "api", "data-model", "runbook"}
+			var outputFiles []string
 			for _, section := range sections {
 				text, err := gen.GenerateSection(ctx, section, fm, spec, plan)
 				if err != nil {
 					return fmt.Errorf("generate %s: %w", section, err)
 				}
 
-				if err := r.WriteMarkdown(section+".md", text); err != nil {
-					return fmt.Errorf("write %s.md: %w", section, err)
+				mdFilename := section + ".md"
+				if err := r.WriteMarkdown(mdFilename, text); err != nil {
+					return fmt.Errorf("write %s: %w", mdFilename, err)
 				}
+				outputFiles = append(outputFiles, filepath.Join(flagOutput, mdFilename))
 
 				mmdFile := sectionMermaidFile[section]
 				if err := r.WriteMermaid(mmdFile, text); err != nil {
@@ -118,9 +133,23 @@ func newPackEnterpriseCmd() *cobra.Command {
 				}
 			}
 
-			if !flagJSON {
+			if flagJSON {
+				result := PackResult{
+					OutputFiles:          outputFiles,
+					TokensUsed:           budget.Used(),
+					EstimatedCost:        float64(budget.Used()) / 1000 * 0.01,
+					DurationMS:           time.Since(start).Milliseconds(),
+					VerificationFailures: 0,
+					FactModelPath:        filepath.Join(flagOutput, "clarion-meta.json"),
+				}
+				if err := r.WriteJSON(result); err != nil {
+					return fmt.Errorf("write JSON result: %w", err)
+				}
+			} else {
 				fmt.Printf("Done. Tokens used: %d\n", budget.Used())
 			}
+
+			Metrics{TokensUsed: budget.Used(), DurationMS: time.Since(start).Milliseconds()}.Print()
 			return nil
 		},
 	}
