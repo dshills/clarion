@@ -24,10 +24,18 @@ func newPackCmd() *cobra.Command {
 	return cmd
 }
 
+// sectionMermaidFile maps a documentation section name to the mermaid diagram filename.
+var sectionMermaidFile = map[string]string{
+	"architecture": "component.mmd",
+	"api":          "api.mmd",
+	"data-model":   "data-model.mmd",
+	"runbook":      "runbook.mmd",
+}
+
 func newPackEnterpriseCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "enterprise",
-		Short: "Generate architecture.md and clarion-meta.json (MVP)",
+		Short: "Generate all documentation sections and clarion-meta.json",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 
@@ -92,20 +100,22 @@ func newPackEnterpriseCmd() *cobra.Command {
 				return fmt.Errorf("create generator: %w", err)
 			}
 
-			// 9. Generate architecture.md.
-			archMD, err := gen.GenerateSection(ctx, "architecture", fm, spec, plan)
-			if err != nil {
-				return fmt.Errorf("generate architecture: %w", err)
-			}
+			// 9. Generate all four documentation sections.
+			sections := []string{"architecture", "api", "data-model", "runbook"}
+			for _, section := range sections {
+				text, err := gen.GenerateSection(ctx, section, fm, spec, plan)
+				if err != nil {
+					return fmt.Errorf("generate %s: %w", section, err)
+				}
 
-			// 10. Write architecture.md.
-			if err := r.WriteMarkdown("architecture.md", archMD); err != nil {
-				return fmt.Errorf("write architecture.md: %w", err)
-			}
+				if err := r.WriteMarkdown(section+".md", text); err != nil {
+					return fmt.Errorf("write %s.md: %w", section, err)
+				}
 
-			// 11. Extract and write Mermaid component diagram.
-			if err := r.WriteMermaid("component.mmd", archMD); err != nil {
-				return fmt.Errorf("write mermaid: %w", err)
+				mmdFile := sectionMermaidFile[section]
+				if err := r.WriteMermaid(mmdFile, text); err != nil {
+					return fmt.Errorf("write mermaid for %s: %w", section, err)
+				}
 			}
 
 			if !flagJSON {

@@ -26,6 +26,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(cli.ExitFailure)
 		}
+		if errors.Is(err, cli.ErrDriftExceeded) {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(cli.ExitFailure)
+		}
 		fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
 		os.Exit(cli.ExitFatal)
 	}

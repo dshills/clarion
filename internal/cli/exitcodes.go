@@ -15,3 +15,9 @@ const (
 // than ExitFatal (2) so callers can distinguish user-facing failures from
 // program errors.
 var ErrVerifyFailed = errors.New("verification failed: documentation contains unsupported claims")
+
+// ErrDriftExceeded is returned by the drift command when the measured drift
+// fraction exceeds the configured --drift-threshold. main maps this to
+// ExitFailure (1) so callers can distinguish a threshold violation from a
+// program error.
+var ErrDriftExceeded = errors.New("drift threshold exceeded")
