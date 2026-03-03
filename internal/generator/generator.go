@@ -33,8 +33,14 @@ func New(pipeline *llm.Pipeline) (*Generator, error) {
 }
 
 // templateData is the data passed to each prompt template.
+//
+// SPEC.md §9 — LLMs must operate only on FactModel JSON, SPEC.md contents,
+// and PLAN.md contents. Never raw repository text. This struct is the sole
+// source of template inputs, enforcing that constraint by construction.
+// The scanner never reads file content; it only extracts metadata (names,
+// paths, confidence scores). TestNoRawRepoInPrompt verifies this invariant.
 type templateData struct {
-	FactModel string // JSON-encoded FactModel
+	FactModel string // JSON-encoded FactModel (metadata only, no file content)
 	Spec      string // contents of SPEC.md
 	Plan      string // contents of PLAN.md (empty if absent)
 }
