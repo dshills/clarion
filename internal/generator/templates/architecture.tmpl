@@ -1,0 +1,20 @@
+You are a technical documentation writer. Given the following machine-extracted facts about a Go repository, write a comprehensive architecture document in Markdown.
+
+FACT MODEL (JSON):
+{{ .FactModel }}
+
+SPEC CONTEXT:
+{{ .Spec }}
+
+{{ if .Plan }}PLAN CONTEXT:
+{{ .Plan }}{{ end }}
+
+Write the architecture document with these sections:
+1. System Overview — one paragraph describing what this system does based on the components and APIs detected.
+2. Components — for each component, list its name, source files, and inferred purpose. Prefix claims with the source file path.
+3. Data Flow — describe how requests flow through the system based on detected API endpoints and datastores.
+4. External Dependencies — list all detected external integrations and datastores.
+5. Trust Boundaries — describe authentication patterns and trust boundaries detected.
+6. Component Diagram — a Mermaid diagram in a ```mermaid graph TD ``` block showing component relationships.
+
+IMPORTANT: Base all claims on the fact model. Do not fabricate endpoints or components not listed in the fact model.
