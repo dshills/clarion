@@ -1,6 +1,7 @@
 package testdata_test
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/clarion-dev/clarion/internal/drift"
 	"github.com/clarion-dev/clarion/internal/facts"
 	"github.com/clarion-dev/clarion/internal/generator"
+	"github.com/clarion-dev/clarion/internal/llm"
 	"github.com/clarion-dev/clarion/internal/render"
 	"github.com/clarion-dev/clarion/internal/verify"
 )
@@ -140,6 +142,156 @@ func TestGoldenDriftMarkdown(t *testing.T) {
 	want := readGolden(t, "drift-report.md")
 	if strings.TrimSpace(got) != strings.TrimSpace(want) {
 		t.Errorf("drift markdown mismatch\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+// makeTestPipeline returns a Pipeline backed by a MockAdapter with a fixed response.
+func makeTestPipeline(text string) *llm.Pipeline {
+	adapter := &llm.MockAdapter{
+		Responses: map[string]llm.LLMResponse{
+			"": {Text: text, PromptTokens: 10, CompletionTokens: 20},
+		},
+	}
+	return llm.NewPipeline(adapter, llm.NewBudgetTracker(100000), false)
+}
+
+func TestGoldenGenerateArchitecture(t *testing.T) {
+	mockText := `# Architecture
+
+## System Overview
+
+The myapp system is a Go application that serves HTTP requests via the api-server component.
+
+## Components
+
+- api-server: Found in cmd/server/main.go. Handles all HTTP traffic.
+
+## Data Flow
+
+Requests arrive at the api-server. GET /users retrieves records from postgres-datastore.
+POST /users writes new records to postgres-datastore.
+
+## External Dependencies
+
+- postgres-datastore: Primary relational datastore.
+DATABASE_URL configures the connection string.
+
+## Component Diagram
+
+` + "```mermaid\ngraph TD\n  api-server --> postgres-datastore\n```"
+
+	gen, err := generator.New(makeTestPipeline(mockText))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	fm := fixtureFactModel()
+	got, err := gen.GenerateSection(context.Background(), "architecture", fm, "spec", "")
+	if err != nil {
+		t.Fatalf("GenerateSection: %v", err)
+	}
+
+	if *update {
+		writeGolden(t, "architecture.md", got)
+		return
+	}
+	want := readGolden(t, "architecture.md")
+	if strings.TrimSpace(got) != strings.TrimSpace(want) {
+		t.Errorf("architecture mismatch\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestGoldenGenerateAPI(t *testing.T) {
+	mockText := `# API Reference
+
+## Endpoints
+
+### GET /users
+
+Returns a list of all users. Handled by listUsers in api/users.go.
+
+### POST /users
+
+Creates a new user. Handled by createUser in api/users.go.
+`
+	gen, err := generator.New(makeTestPipeline(mockText))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	fm := fixtureFactModel()
+	got, err := gen.GenerateSection(context.Background(), "api", fm, "spec", "")
+	if err != nil {
+		t.Fatalf("GenerateSection: %v", err)
+	}
+
+	if *update {
+		writeGolden(t, "api.md", got)
+		return
+	}
+	want := readGolden(t, "api.md")
+	if strings.TrimSpace(got) != strings.TrimSpace(want) {
+		t.Errorf("api mismatch\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestGoldenGenerateDataModel(t *testing.T) {
+	mockText := `# Data Model
+
+## Datastores
+
+### postgres-datastore
+
+Driver: postgres. Connection configured via DATABASE_URL.
+Stores user records and application state.
+`
+	gen, err := generator.New(makeTestPipeline(mockText))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	fm := fixtureFactModel()
+	got, err := gen.GenerateSection(context.Background(), "data-model", fm, "spec", "")
+	if err != nil {
+		t.Fatalf("GenerateSection: %v", err)
+	}
+
+	if *update {
+		writeGolden(t, "data-model.md", got)
+		return
+	}
+	want := readGolden(t, "data-model.md")
+	if strings.TrimSpace(got) != strings.TrimSpace(want) {
+		t.Errorf("data-model mismatch\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestGoldenGenerateRunbook(t *testing.T) {
+	mockText := `# Runbook
+
+## Starting the Service
+
+1. Set DATABASE_URL to the postgres-datastore connection string.
+2. Start the api-server with the standard entrypoint.
+
+## Health Checks
+
+- GET /users should return 200 OK when the service is healthy.
+`
+	gen, err := generator.New(makeTestPipeline(mockText))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	fm := fixtureFactModel()
+	got, err := gen.GenerateSection(context.Background(), "runbook", fm, "spec", "")
+	if err != nil {
+		t.Fatalf("GenerateSection: %v", err)
+	}
+
+	if *update {
+		writeGolden(t, "runbook.md", got)
+		return
+	}
+	want := readGolden(t, "runbook.md")
+	if strings.TrimSpace(got) != strings.TrimSpace(want) {
+		t.Errorf("runbook mismatch\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }
 
