@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -297,12 +298,22 @@ func componentModified(prev, curr facts.Evidence) bool {
 	return delta > 0.1
 }
 
+// stringSlicesEqual returns true when a and b contain the same strings
+// regardless of order. Order-insensitive comparison prevents false-positive
+// drift when the scanner returns the same source files in a different order
+// on successive runs.
 func stringSlicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := range a {
-		if a[i] != b[i] {
+	ac := make([]string, len(a))
+	copy(ac, a)
+	bc := make([]string, len(b))
+	copy(bc, b)
+	sort.Strings(ac)
+	sort.Strings(bc)
+	for i := range ac {
+		if ac[i] != bc[i] {
 			return false
 		}
 	}

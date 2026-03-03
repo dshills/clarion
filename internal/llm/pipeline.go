@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 )
 
 // Pipeline runs a sequence of LLM stages within a token budget.
@@ -18,6 +19,26 @@ func NewPipeline(adapter ProviderAdapter, budget *BudgetTracker, verbose bool) *
 	return &Pipeline{adapter: adapter, budget: budget, verbose: verbose}
 }
 
+// rawSourceIndicators are Go source-code fragments that must never appear in
+// LLM prompts (SPEC.md §9). Prompts may only contain FactModel JSON, SPEC.md
+// text, and PLAN.md text — never raw repository file content.
+var rawSourceIndicators = []string{
+	"\npackage main\n",
+	"func main() {",
+	"\nimport (\n",
+}
+
+// validatePromptContent enforces SPEC.md §9: LLM prompts must never contain
+// raw Go source code — only FactModel JSON, SPEC.md, and PLAN.md text.
+func validatePromptContent(prompt string) error {
+	for _, indicator := range rawSourceIndicators {
+		if strings.Contains(prompt, indicator) {
+			return fmt.Errorf("prompt contains raw Go source code (indicator %q); see SPEC.md §9", indicator)
+		}
+	}
+	return nil
+}
+
 // Run executes the pipeline stages in order, respecting the token budget.
 // If a required stage cannot be afforded, it returns ErrBudgetExhausted.
 // If an optional stage is skipped, it returns ErrBudgetSkipped with partial results.
@@ -29,6 +50,10 @@ func (p *Pipeline) Run(ctx context.Context, stages []PipelineStage) ([]StageResu
 	var results []StageResult
 
 	for _, stage := range stages {
+		if err := validatePromptContent(stage.Prompt); err != nil {
+			return results, err
+		}
+
 		estimated := EstimateTokens(stage.Prompt)
 
 		if !p.budget.CanAfford(estimated) {
