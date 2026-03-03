@@ -2,97 +2,51 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Status
-
-Clarion is currently in the **specification phase**. The full technical design is in `specs/SPEC.md`. No implementation exists yet.
-
-## What Clarion Is
-
-A Go 1.22+ CLI tool (`clarion`) that generates evidence-backed documentation by scanning a repository, building a structured Fact Model, and using LLMs to produce documentation from that model — never from raw source. Core philosophy: *documentation must be derived, not imagined.*
-
-## Planned Build & Run Commands
-
-Once implemented (entry point at `/cmd/clarion/main.go`):
+## Commands
 
 ```bash
-go build ./cmd/clarion/...          # Build binary
-go test ./...                       # Run all tests
-go test ./internal/scanner/...      # Run single package tests
-go vet ./...                        # Vet
+make build          # Build binary → bin/clarion
+make test           # go test ./... ./internal/testdata/
+make lint           # golangci-lint run ./...
+make golden         # Regenerate golden test fixtures (-update)
+make release        # Cross-platform static binaries (5 targets)
+make clean          # Remove bin/
 
-clarion pack enterprise --spec SPEC.md --plan PLAN.md
-clarion gen architecture
-clarion drift --drift-threshold 0.75
-clarion verify
+go test ./internal/scanner/...                    # Single package
+go test -run TestScanGoRepository ./internal/scanner/
+go test -race -count=1 ./...                      # Race detector
+go test -bench=BenchmarkScanLargeRepo ./internal/scanner/
+
+prism review staged --provider openai --model gpt-4o --format markdown
 ```
 
-Exit codes: `0` = success, `1` = verification/drift failure, `2` = fatal error.
-
-All commands support `--spec`, `--plan`, `--output`, `--json`, `--verbose` flags.
-
-## Module Structure
+## Architecture (5 layers)
 
 ```
-/cmd/clarion/          # Binary entrypoint
-/internal/scanner/     # Repo analysis (language detection, entrypoints, deps, APIs, DBs, jobs, config)
-/internal/facts/       # FactModel construction and serialization
-/internal/generator/   # LLM-driven documentation generation
-/internal/verify/      # Claim verification against FactModel
-/internal/drift/       # Drift detection between FactModel snapshots
-/internal/llm/         # OpenAI and Anthropic client abstractions
-/internal/render/      # Markdown, Mermaid, JSON output rendering
-/internal/cli/         # CLI wiring
+Scanner → Fact Model → LLM Integration → Generator → Verifier/Renderer
 ```
 
-No circular dependencies between packages.
+| Package | Responsibility |
+|---------|----------------|
+| `internal/scanner/` | AST-based repo analysis (`go/parser`, `go/ast`). No file content — metadata only. |
+| `internal/facts/` | `FactModel` types, `clarion-meta.json` serialization, `TruncateToSize` |
+| `internal/llm/` | Config, `BudgetTracker`, `Pipeline`, OpenAI/Anthropic adapters, `MockAdapter`, `enforceSpec9` guard |
+| `internal/generator/` | `templateData` (FactModel JSON + spec + plan only), `GenerateSection`, `ApplyInferredMarkers` |
+| `internal/render/` | `WriteMarkdown`, `WriteMermaid`, `WriteFactModel`, `WriteJSON`, `ExtractMermaid` |
+| `internal/verify/` | `VerifySection`, `VerifyAll` — cross-references claims against FactModel |
+| `internal/drift/` | `Compare`, `DriftReport`, `Markdown()` |
+| `internal/cli/` | Cobra commands: `pack enterprise`, `gen`, `verify`, `drift`, `version` |
 
-## Five-Layer Architecture
+## Key patterns
 
-1. **Scanner** — Parses repo using `go/parser`, `go/ast`, `go/token`, `go/types`. Detects HTTP handlers, router registrations, struct tags, DB patterns, frameworks (gin, chi, echo). Must not use LLM for structural extraction.
-2. **Fact Model Builder** — Constructs the canonical `FactModel` struct (see below). Every claim must carry `SourceFiles`, `LineRanges`, and `ConfidenceScore`. Serialized to `docs/clarion-meta.json` (the authoritative evidence store).
-3. **Documentation Generator** — LLMs operate only on `FactModel` JSON + `SPEC.md` + `PLAN.md` contents. Never raw repository text.
-4. **Verification Engine** — Parses generated docs, extracts claims, cross-references against FactModel, flags unsupported claims. Assigns high/medium/low confidence per section.
-5. **Output Renderer** — Writes Markdown, Mermaid diagrams (`.mmd`), and JSON.
+- **ErrVerifyFailed / ErrDriftExceeded**: sentinel errors returned from `RunE` so deferred cleanup runs; `main.go` maps them to exit 1 vs exit 2.
+- **AcquireLock**: advisory `.clarion.lock` per output dir; all errors after `AcquireLock` must use `return fmt.Errorf` (not `Fatalf`/`os.Exit`).
+- **Confidence tiers**: Direct=0.9, Indirect=0.7, Inferred=0.5, Speculative=0.2. Scores never manually adjusted after assignment.
+- **`[INFERRED]` marker**: applied by `ApplyInferredMarkers` for entries with score in [0.4, 0.7) or `Inferred: true`; entries below 0.4 are omitted.
+- **SPEC.md §9 enforcement**: `enforceSpec9` in `internal/llm/spec9_guard.go` rejects prompts starting with a bare Go package declaration; `templateData` ensures only FactModel JSON + spec + plan enter prompts.
+- **Stale LSP diagnostics**: always verify with `go build ./...` before acting on IDE "undefined" errors — new files in a package often cause stale LSP state.
+- **`--emit-metrics`**: JSON telemetry after command completion (`tokens_used`, `estimated_cost`, `duration_ms`, `verification_failures`).
 
-## Core Data Model
+## Module
 
-```go
-type FactModel struct {
-    Project      ProjectInfo
-    Languages    []string
-    Components   []Component
-    APIs         []APIEndpoint
-    Datastores   []Datastore
-    Jobs         []BackgroundJob
-    Integrations []ExternalIntegration
-    Config       []ConfigVar
-    Security     SecurityModel
-}
-```
-
-Every entry includes: `Name`, `Description`, `SourceFiles []string`, `LineRanges []Range`, `ConfidenceScore float64`, `Inferred bool`.
-
-## LLM Integration
-
-Supports OpenAI and Anthropic, configured via environment variables. Three-stage pipeline: summarization (optional small model) → documentation generation → verification critique. Must log tokens used, cost estimate, and duration. Use `--json` for structured telemetry.
-
-## Testing Strategy
-
-- Table-driven unit tests for AST parsing, FactModel generation, and drift comparison
-- Golden file tests for Markdown and Mermaid output
-- Mock LLM client for deterministic testing (same inputs → identical outputs at temperature 0)
-
-## Key Constraints
-
-- Single static binary, no heavy runtime dependencies
-- No code execution or arbitrary shell invocation
-- Do not transmit raw repository to LLM unless explicitly enabled
-- Respect `.gitignore` by default
-- Repo scanning must complete in under 10 seconds for medium projects
-- Must handle repos up to 200k LOC
-
-## MVP Definition of Done
-
-Parse Go repo → build FactModel → generate `architecture.md` → generate `clarion-meta.json` → support `verify` command → run in CI without interaction.
-
-No feature expansion until these are stable.
+`github.com/clarion-dev/clarion`, Go 1.22+
