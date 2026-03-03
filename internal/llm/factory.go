@@ -27,7 +27,7 @@ func NewAdapter(cfg Config) (ProviderAdapter, error) {
 			retryDelay: 2 * time.Second,
 		}
 	default:
-		return nil, fmt.Errorf("unknown provider: %q (must be openai or anthropic)", cfg.Provider)
+		return nil, fmt.Errorf("unknown provider: %q (must be one of: openai, anthropic, gemini)", cfg.Provider)
 	}
 
 	if err := adapter.Validate(); err != nil {

@@ -145,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Helper()
 		t.Setenv("CLARION_LLM_PROVIDER", "openai")
 		t.Setenv("CLARION_LLM_MODEL", "gpt-4o")
-		t.Setenv("CLARION_LLM_API_KEY", "sk-test123")
+		t.Setenv("OPENAI_API_KEY", "sk-test123")
 		t.Setenv("CLARION_LLM_TOKEN_BUDGET", "")
 	}
 
@@ -172,12 +172,26 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("anthropic provider accepted", func(t *testing.T) {
 		setValid(t)
 		t.Setenv("CLARION_LLM_PROVIDER", "anthropic")
+		t.Setenv("ANTHROPIC_API_KEY", "sk-ant-test123")
 		cfg, err := LoadConfig()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if cfg.Provider != "anthropic" {
 			t.Errorf("Provider = %q, want %q", cfg.Provider, "anthropic")
+		}
+	})
+
+	t.Run("gemini provider accepted", func(t *testing.T) {
+		setValid(t)
+		t.Setenv("CLARION_LLM_PROVIDER", "gemini")
+		t.Setenv("GEMINI_API_KEY", "AIza-test123")
+		cfg, err := LoadConfig()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Provider != "gemini" {
+			t.Errorf("Provider = %q, want %q", cfg.Provider, "gemini")
 		}
 	})
 
@@ -200,7 +214,7 @@ func TestLoadConfig(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !strings.Contains(err.Error(), "must be one of: openai, anthropic") {
+		if !strings.Contains(err.Error(), "must be one of: openai, anthropic, gemini") {
 			t.Errorf("error %q does not contain expected message", err.Error())
 		}
 	})
@@ -217,14 +231,27 @@ func TestLoadConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("CLARION_LLM_API_KEY empty", func(t *testing.T) {
+	t.Run("OPENAI_API_KEY empty", func(t *testing.T) {
 		setValid(t)
-		t.Setenv("CLARION_LLM_API_KEY", "")
+		t.Setenv("OPENAI_API_KEY", "")
 		_, err := LoadConfig()
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !strings.Contains(err.Error(), "CLARION_LLM_API_KEY is required") {
+		if !strings.Contains(err.Error(), "OPENAI_API_KEY is required") {
+			t.Errorf("error %q does not contain expected message", err.Error())
+		}
+	})
+
+	t.Run("ANTHROPIC_API_KEY empty", func(t *testing.T) {
+		setValid(t)
+		t.Setenv("CLARION_LLM_PROVIDER", "anthropic")
+		t.Setenv("ANTHROPIC_API_KEY", "")
+		_, err := LoadConfig()
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "ANTHROPIC_API_KEY is required") {
 			t.Errorf("error %q does not contain expected message", err.Error())
 		}
 	})

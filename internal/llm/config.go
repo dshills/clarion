@@ -11,8 +11,23 @@ import (
 type Config struct {
 	Provider    string `json:"provider"`     // CLARION_LLM_PROVIDER
 	Model       string `json:"model"`        // CLARION_LLM_MODEL
-	APIKey      string `json:"-"`            // CLARION_LLM_API_KEY — never serialized
+	APIKey      string `json:"-"`            // provider-specific key — never serialized
 	TokenBudget int    `json:"token_budget"` // CLARION_LLM_TOKEN_BUDGET; default 100000
+}
+
+// apiKeyEnvVar returns the conventional environment variable name for the
+// API key of the given provider (e.g. "OPENAI_API_KEY" for "openai").
+func apiKeyEnvVar(provider string) string {
+	switch provider {
+	case "openai":
+		return "OPENAI_API_KEY"
+	case "anthropic":
+		return "ANTHROPIC_API_KEY"
+	case "gemini":
+		return "GEMINI_API_KEY"
+	default:
+		return ""
+	}
 }
 
 // LoadConfig reads Config from environment variables.
@@ -21,24 +36,26 @@ func LoadConfig() (Config, error) {
 	cfg := Config{
 		Provider:    os.Getenv("CLARION_LLM_PROVIDER"),
 		Model:       os.Getenv("CLARION_LLM_MODEL"),
-		APIKey:      os.Getenv("CLARION_LLM_API_KEY"),
 		TokenBudget: 100000,
 	}
 
 	var errs []string
 
-	if cfg.Provider == "" {
-		errs = append(errs, "CLARION_LLM_PROVIDER is required (openai or anthropic)")
-	} else if cfg.Provider != "openai" && cfg.Provider != "anthropic" {
-		errs = append(errs, "CLARION_LLM_PROVIDER must be one of: openai, anthropic")
+	switch cfg.Provider {
+	case "":
+		errs = append(errs, "CLARION_LLM_PROVIDER is required (openai, anthropic, or gemini)")
+	case "openai", "anthropic", "gemini":
+		keyVar := apiKeyEnvVar(cfg.Provider)
+		cfg.APIKey = os.Getenv(keyVar)
+		if cfg.APIKey == "" {
+			errs = append(errs, keyVar+" is required")
+		}
+	default:
+		errs = append(errs, "CLARION_LLM_PROVIDER must be one of: openai, anthropic, gemini")
 	}
 
 	if cfg.Model == "" {
 		errs = append(errs, "CLARION_LLM_MODEL is required")
-	}
-
-	if cfg.APIKey == "" {
-		errs = append(errs, "CLARION_LLM_API_KEY is required")
 	}
 
 	if raw := os.Getenv("CLARION_LLM_TOKEN_BUDGET"); raw != "" {

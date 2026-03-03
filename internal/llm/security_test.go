@@ -13,13 +13,13 @@ import (
 
 const fakeAPIKey = "sk-FAKE-KEY-clarion-test-do-not-use-XYZ987"
 
-// TestAPIKeyNotLogged verifies that CLARION_LLM_API_KEY never appears in any
+// TestAPIKeyNotLogged verifies that the provider API key never appears in any
 // log output, error message, or JSON-serialized Config.
 func TestAPIKeyNotLogged(t *testing.T) {
 	t.Run("ConfigJSONOmitsKey", func(t *testing.T) {
 		t.Setenv("CLARION_LLM_PROVIDER", "openai")
 		t.Setenv("CLARION_LLM_MODEL", "gpt-4o")
-		t.Setenv("CLARION_LLM_API_KEY", fakeAPIKey)
+		t.Setenv("OPENAI_API_KEY", fakeAPIKey)
 
 		cfg, err := LoadConfig()
 		if err != nil {

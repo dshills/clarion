@@ -84,7 +84,7 @@ make release
 # Set LLM credentials
 export CLARION_LLM_PROVIDER=openai
 export CLARION_LLM_MODEL=gpt-4o
-export CLARION_LLM_API_KEY=sk-...
+export OPENAI_API_KEY=sk-...
 
 # Scan the repo, build the Fact Model, generate all documentation
 clarion pack enterprise --spec SPEC.md --plan PLAN.md --output docs/
@@ -250,9 +250,11 @@ All configuration is via environment variables. No credentials are written to di
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `CLARION_LLM_PROVIDER` | Yes | `openai` or `anthropic` |
-| `CLARION_LLM_MODEL` | Yes | Model name (e.g. `gpt-4o`, `claude-opus-4-6`) |
-| `CLARION_LLM_API_KEY` | Yes | API key for the selected provider |
+| `CLARION_LLM_PROVIDER` | Yes | `openai`, `anthropic`, or `gemini` |
+| `CLARION_LLM_MODEL` | Yes | Model name (e.g. `gpt-4o`, `claude-opus-4-6`, `gemini-2.0-flash`) |
+| `OPENAI_API_KEY` | If provider is `openai` | OpenAI API key |
+| `ANTHROPIC_API_KEY` | If provider is `anthropic` | Anthropic API key |
+| `GEMINI_API_KEY` | If provider is `gemini` | Google Gemini API key |
 | `CLARION_LLM_TOKEN_BUDGET` | No | Maximum tokens per run. Default: `100000` |
 
 **OpenAI example:**
@@ -260,7 +262,7 @@ All configuration is via environment variables. No credentials are written to di
 ```bash
 export CLARION_LLM_PROVIDER=openai
 export CLARION_LLM_MODEL=gpt-4o
-export CLARION_LLM_API_KEY=sk-...
+export OPENAI_API_KEY=sk-...
 ```
 
 **Anthropic example:**
@@ -268,7 +270,15 @@ export CLARION_LLM_API_KEY=sk-...
 ```bash
 export CLARION_LLM_PROVIDER=anthropic
 export CLARION_LLM_MODEL=claude-opus-4-6
-export CLARION_LLM_API_KEY=sk-ant-...
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+**Gemini example:**
+
+```bash
+export CLARION_LLM_PROVIDER=gemini
+export CLARION_LLM_MODEL=gemini-2.0-flash
+export GEMINI_API_KEY=AIza...
 ```
 
 ### Token budget
@@ -342,7 +352,7 @@ Claims with `ConfidenceScore` in `[0.4, 0.7)` or with `Inferred: true` are rende
   env:
     CLARION_LLM_PROVIDER: openai
     CLARION_LLM_MODEL: gpt-4o
-    CLARION_LLM_API_KEY: ${{ secrets.CLARION_LLM_API_KEY }}
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   run: |
     clarion pack enterprise --spec SPEC.md --plan PLAN.md --output docs/
     clarion verify --output docs/
