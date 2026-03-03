@@ -6,6 +6,13 @@ import (
 	"log"
 )
 
+// maxOutputTokensPerCall caps the max_tokens sent to the provider on any
+// single call. Current frontier models (gpt-4o, gpt-4o-mini, claude-3.*,
+// claude-haiku-4-5) all support at least 4096 completion tokens. Using the
+// full budget.Remaining() as the API max_tokens parameter would exceed
+// per-model limits when the budget is large (e.g. the default 100 000).
+const maxOutputTokensPerCall = 4096
+
 // Pipeline runs a sequence of LLM stages within a token budget.
 type Pipeline struct {
 	adapter ProviderAdapter
@@ -48,6 +55,9 @@ func (p *Pipeline) Run(ctx context.Context, stages []PipelineStage) ([]StageResu
 		}
 
 		maxTokens := p.budget.Remaining()
+		if maxTokens > maxOutputTokensPerCall {
+			maxTokens = maxOutputTokensPerCall
+		}
 		resp, err := p.adapter.Call(ctx, LLMRequest{
 			Prompt:    stage.Prompt,
 			MaxTokens: maxTokens,
