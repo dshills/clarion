@@ -26,6 +26,13 @@ func NewAdapter(cfg Config) (ProviderAdapter, error) {
 			client:     client,
 			retryDelay: 2 * time.Second,
 		}
+	case "gemini":
+		adapter = &geminiAdapter{
+			model:      cfg.Model,
+			apiKey:     cfg.APIKey,
+			client:     client,
+			retryDelay: 2 * time.Second,
+		}
 	default:
 		return nil, fmt.Errorf("unknown provider: %q (must be one of: openai, anthropic, gemini)", cfg.Provider)
 	}

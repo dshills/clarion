@@ -14,6 +14,7 @@ var (
 	flagJSON        bool
 	flagVerbose     bool
 	flagEmitMetrics bool
+	flagRepoRoot    string
 )
 
 // New returns the root cobra command for clarion.
@@ -51,6 +52,7 @@ func New(version, commit, built string) *cobra.Command {
 	root.PersistentFlags().BoolVar(&flagJSON, "json", false, "Emit structured JSON to stdout")
 	root.PersistentFlags().BoolVar(&flagVerbose, "verbose", false, "Print step-by-step processing details to stderr")
 	root.PersistentFlags().BoolVar(&flagEmitMetrics, "emit-metrics", false, "Print token usage and cost metrics after command completion")
+	root.PersistentFlags().StringVar(&flagRepoRoot, "repo-root", ".", "Root directory of the repository to scan")
 
 	root.AddCommand(
 		newPackCmd(),

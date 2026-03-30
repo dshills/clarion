@@ -767,6 +767,225 @@ func TestAnthropicAdapter(t *testing.T) {
 	})
 }
 
+// ── GeminiAdapter ───────────────────────────────────────────────────────────
+
+func geminiSuccessResponse(text, model string, promptTokens, candidatesTokens int) []byte {
+	resp := map[string]any{
+		"candidates": []map[string]any{
+			{
+				"content": map[string]any{
+					"parts": []map[string]string{
+						{"text": text},
+					},
+				},
+			},
+		},
+		"usageMetadata": map[string]int{
+			"promptTokenCount":     promptTokens,
+			"candidatesTokenCount": candidatesTokens,
+		},
+		"modelVersion": model,
+	}
+	data, _ := json.Marshal(resp)
+	return data
+}
+
+func TestGeminiAdapter(t *testing.T) {
+	t.Run("valid response", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Verify API key is passed as query parameter.
+			if r.URL.Query().Get("key") == "" {
+				t.Error("missing key query parameter")
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write(geminiSuccessResponse("Gemini says hi!", "gemini-2.0-flash", 12, 6))
+		}))
+		defer srv.Close()
+
+		adapter := &geminiAdapter{
+			model:      "gemini-2.0-flash",
+			apiKey:     "test-key",
+			client:     newClientWithBaseURL(srv.URL),
+			retryDelay: 0,
+		}
+
+		resp, err := adapter.Call(context.Background(), LLMRequest{Prompt: "hi", MaxTokens: 100})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.Text != "Gemini says hi!" {
+			t.Errorf("Text = %q, want %q", resp.Text, "Gemini says hi!")
+		}
+		if resp.PromptTokens != 12 {
+			t.Errorf("PromptTokens = %d, want 12", resp.PromptTokens)
+		}
+		if resp.CompletionTokens != 6 {
+			t.Errorf("CompletionTokens = %d, want 6", resp.CompletionTokens)
+		}
+		if resp.ModelID != "gemini-2.0-flash" {
+			t.Errorf("ModelID = %q, want %q", resp.ModelID, "gemini-2.0-flash")
+		}
+	})
+
+	t.Run("429 retry succeeds on second attempt", func(t *testing.T) {
+		var callCount int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			n := atomic.AddInt32(&callCount, 1)
+			if n == 1 {
+				w.WriteHeader(http.StatusTooManyRequests)
+				w.Write([]byte(`{"error":"rate limited"}`))
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write(geminiSuccessResponse("retried!", "gemini-2.0-flash", 10, 4))
+		}))
+		defer srv.Close()
+
+		adapter := &geminiAdapter{
+			model:      "gemini-2.0-flash",
+			apiKey:     "test-key",
+			client:     newClientWithBaseURL(srv.URL),
+			retryDelay: 0,
+		}
+
+		resp, err := adapter.Call(context.Background(), LLMRequest{Prompt: "hi", MaxTokens: 100})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if resp.Text != "retried!" {
+			t.Errorf("Text = %q, want %q", resp.Text, "retried!")
+		}
+		if atomic.LoadInt32(&callCount) != 2 {
+			t.Errorf("callCount = %d, want 2", atomic.LoadInt32(&callCount))
+		}
+	})
+
+	t.Run("429 retry fails on second attempt", func(t *testing.T) {
+		var callCount int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&callCount, 1)
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Write([]byte(`{"error":"rate limited"}`))
+		}))
+		defer srv.Close()
+
+		adapter := &geminiAdapter{
+			model:      "gemini-2.0-flash",
+			apiKey:     "test-key",
+			client:     newClientWithBaseURL(srv.URL),
+			retryDelay: 0,
+		}
+
+		_, err := adapter.Call(context.Background(), LLMRequest{Prompt: "hi", MaxTokens: 100})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if atomic.LoadInt32(&callCount) != 2 {
+			t.Errorf("callCount = %d, want 2", atomic.LoadInt32(&callCount))
+		}
+	})
+
+	t.Run("401 no retry", func(t *testing.T) {
+		var callCount int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&callCount, 1)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error":"unauthorized"}`))
+		}))
+		defer srv.Close()
+
+		adapter := &geminiAdapter{
+			model:      "gemini-2.0-flash",
+			apiKey:     "test-key",
+			client:     newClientWithBaseURL(srv.URL),
+			retryDelay: 0,
+		}
+
+		_, err := adapter.Call(context.Background(), LLMRequest{Prompt: "hi", MaxTokens: 100})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if atomic.LoadInt32(&callCount) != 1 {
+			t.Errorf("callCount = %d, want 1 (no retry on 401)", atomic.LoadInt32(&callCount))
+		}
+	})
+
+	t.Run("malformed JSON response", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`not json`))
+		}))
+		defer srv.Close()
+
+		adapter := &geminiAdapter{
+			model:      "gemini-2.0-flash",
+			apiKey:     "test-key",
+			client:     newClientWithBaseURL(srv.URL),
+			retryDelay: 0,
+		}
+
+		_, err := adapter.Call(context.Background(), LLMRequest{Prompt: "hi", MaxTokens: 100})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "unparseable response") {
+			t.Errorf("error %q does not contain 'unparseable response'", err.Error())
+		}
+	})
+
+	t.Run("empty candidates array", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"candidates":[],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":0}}`))
+		}))
+		defer srv.Close()
+
+		adapter := &geminiAdapter{
+			model:      "gemini-2.0-flash",
+			apiKey:     "test-key",
+			client:     newClientWithBaseURL(srv.URL),
+			retryDelay: 0,
+		}
+
+		_, err := adapter.Call(context.Background(), LLMRequest{Prompt: "hi", MaxTokens: 100})
+		if err == nil {
+			t.Fatal("expected error for empty candidates, got nil")
+		}
+		if !strings.Contains(err.Error(), "unparseable response") {
+			t.Errorf("error %q does not contain 'unparseable response'", err.Error())
+		}
+	})
+
+	t.Run("403 forbidden no retry", func(t *testing.T) {
+		var callCount int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(&callCount, 1)
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error":"forbidden"}`))
+		}))
+		defer srv.Close()
+
+		adapter := &geminiAdapter{
+			model:      "gemini-2.0-flash",
+			apiKey:     "test-key",
+			client:     newClientWithBaseURL(srv.URL),
+			retryDelay: 0,
+		}
+
+		_, err := adapter.Call(context.Background(), LLMRequest{Prompt: "hi", MaxTokens: 100})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if atomic.LoadInt32(&callCount) != 1 {
+			t.Errorf("callCount = %d, want 1 (no retry on 403)", atomic.LoadInt32(&callCount))
+		}
+	})
+}
+
 // ── MockAdapter ──────────────────────────────────────────────────────────────
 
 func TestMockAdapter(t *testing.T) {
@@ -1104,6 +1323,22 @@ func TestNewAdapter(t *testing.T) {
 		}
 	})
 
+	t.Run("gemini adapter created successfully", func(t *testing.T) {
+		cfg := Config{
+			Provider:    "gemini",
+			Model:       "gemini-2.0-flash",
+			APIKey:      "test-key",
+			TokenBudget: 100000,
+		}
+		adapter, err := NewAdapter(cfg)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if adapter.Name() != "gemini" {
+			t.Errorf("Name() = %q, want %q", adapter.Name(), "gemini")
+		}
+	})
+
 	t.Run("unknown provider returns error", func(t *testing.T) {
 		cfg := Config{
 			Provider:    "google",
@@ -1142,7 +1377,7 @@ func TestNewAdapter(t *testing.T) {
 // the production endpoint constants.
 func newClientWithBaseURL(baseURL string) *http.Client {
 	return &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout:   5 * time.Second,
 		Transport: &redirectTransport{base: baseURL},
 	}
 }

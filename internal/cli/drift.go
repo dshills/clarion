@@ -37,10 +37,9 @@ func newDriftCmd() *cobra.Command {
 				return fmt.Errorf("drift-threshold must be in [0.0, 1.0]")
 			}
 
-			// 3. Re-scan the repo (use directory of flagSpec as repo root).
-			repoRoot := filepath.Dir(flagSpec)
+			// 3. Re-scan the repo from --repo-root.
 			s := scanner.New()
-			current, err := s.Scan(repoRoot)
+			current, err := s.Scan(flagRepoRoot)
 			if err != nil {
 				return fmt.Errorf("scan: %w", err)
 			}

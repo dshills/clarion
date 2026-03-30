@@ -74,10 +74,9 @@ func newPackEnterpriseCmd() *cobra.Command {
 			}
 			defer unlock()
 
-			// 4. Scan the repository (root = directory containing the spec file).
-			repoRoot := filepath.Dir(flagSpec)
+			// 4. Scan the repository from --repo-root.
 			s := scanner.New()
-			fm, err := s.Scan(repoRoot)
+			fm, err := s.Scan(flagRepoRoot)
 			if err != nil {
 				return fmt.Errorf("scan: %w", err)
 			}
@@ -119,6 +118,13 @@ func newPackEnterpriseCmd() *cobra.Command {
 				text, err := gen.GenerateSection(ctx, section, fm, spec, plan)
 				if err != nil {
 					return fmt.Errorf("generate %s: %w", section, err)
+				}
+
+				if !generator.IsSubstantive(text) {
+					if flagVerbose {
+						fmt.Fprintf(os.Stderr, "skipping %s: no substantive content\n", section)
+					}
+					continue
 				}
 
 				mdFilename := section + ".md"

@@ -17,7 +17,7 @@ type LLMResponse struct {
 	LatencyMS        int64
 }
 
-// ProviderAdapter abstracts OpenAI and Anthropic behind a common interface.
+// ProviderAdapter abstracts OpenAI, Anthropic, and Gemini behind a common interface.
 type ProviderAdapter interface {
 	// Name returns the provider name (e.g., "openai", "anthropic").
 	Name() string
