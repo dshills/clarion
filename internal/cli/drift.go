@@ -23,7 +23,7 @@ func newDriftCmd() *cobra.Command {
 			// Pre-check: clarion-meta.json must exist.
 			metaPath := filepath.Join(flagOutput, "clarion-meta.json")
 			if _, err := os.Stat(metaPath); err != nil {
-				return fmt.Errorf("clarion-meta.json not found. Run clarion pack enterprise to generate an initial snapshot.")
+				return fmt.Errorf("clarion-meta.json not found, run clarion pack enterprise to generate an initial snapshot")
 			}
 
 			// 1. Load previous clarion-meta.json.

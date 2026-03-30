@@ -44,9 +44,9 @@ func generateSyntheticRepo(dir string, nFiles, nLines int) error {
 
 		var sb strings.Builder
 		pkgName := fmt.Sprintf("pkg%d", i/10)
-		sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+		fmt.Fprintf(&sb, "package %s\n\n", pkgName)
 		for j := 0; j < nLines-1; j++ {
-			sb.WriteString(fmt.Sprintf("// line%d in file%d\n", j, i))
+			fmt.Fprintf(&sb, "// line%d in file%d\n", j, i)
 		}
 
 		fpath := filepath.Join(pkgDir, fmt.Sprintf("file%d.go", i))

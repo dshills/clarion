@@ -31,7 +31,7 @@ type DriftReport struct {
 
 // DriftEntry records a single changed item in a DriftReport.
 type DriftEntry struct {
-	Type   string `json:"type"`   // "component", "api", "datastore", "job", "integration", "config"
+	Type   string `json:"type"` // "component", "api", "datastore", "job", "integration", "config"
 	Name   string `json:"name"`
 	Change string `json:"change"` // "added", "removed", "modified"
 }
@@ -59,8 +59,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	prevComponents := make(map[string]facts.Component, len(previous.Components))
 	for _, c := range previous.Components {
 		if c.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("component: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping component with empty name")
+			report.Skipped = append(report.Skipped, "component: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping component with empty name")
 			continue
 		}
 		prevComponents[c.Name] = c
@@ -69,8 +69,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	currComponents := make(map[string]facts.Component, len(current.Components))
 	for _, c := range current.Components {
 		if c.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("component: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping component with empty name")
+			report.Skipped = append(report.Skipped, "component: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping component with empty name")
 			continue
 		}
 		currComponents[c.Name] = c
@@ -95,8 +95,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	prevAPIs := make(map[string]facts.APIEndpoint, len(previous.APIs))
 	for _, a := range previous.APIs {
 		if a.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("api: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping api with empty name")
+			report.Skipped = append(report.Skipped, "api: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping api with empty name")
 			continue
 		}
 		prevAPIs[a.Name] = a
@@ -105,8 +105,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	currAPIs := make(map[string]facts.APIEndpoint, len(current.APIs))
 	for _, a := range current.APIs {
 		if a.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("api: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping api with empty name")
+			report.Skipped = append(report.Skipped, "api: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping api with empty name")
 			continue
 		}
 		currAPIs[a.Name] = a
@@ -131,8 +131,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	prevDatastores := make(map[string]facts.Datastore, len(previous.Datastores))
 	for _, d := range previous.Datastores {
 		if d.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("datastore: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping datastore with empty name")
+			report.Skipped = append(report.Skipped, "datastore: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping datastore with empty name")
 			continue
 		}
 		prevDatastores[d.Name] = d
@@ -141,8 +141,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	currDatastores := make(map[string]facts.Datastore, len(current.Datastores))
 	for _, d := range current.Datastores {
 		if d.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("datastore: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping datastore with empty name")
+			report.Skipped = append(report.Skipped, "datastore: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping datastore with empty name")
 			continue
 		}
 		currDatastores[d.Name] = d
@@ -167,8 +167,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	prevJobs := make(map[string]facts.BackgroundJob, len(previous.Jobs))
 	for _, j := range previous.Jobs {
 		if j.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("job: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping job with empty name")
+			report.Skipped = append(report.Skipped, "job: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping job with empty name")
 			continue
 		}
 		prevJobs[j.Name] = j
@@ -177,8 +177,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	currJobs := make(map[string]facts.BackgroundJob, len(current.Jobs))
 	for _, j := range current.Jobs {
 		if j.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("job: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping job with empty name")
+			report.Skipped = append(report.Skipped, "job: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping job with empty name")
 			continue
 		}
 		currJobs[j.Name] = j
@@ -203,8 +203,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	prevIntegrations := make(map[string]facts.ExternalIntegration, len(previous.Integrations))
 	for _, i := range previous.Integrations {
 		if i.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("integration: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping integration with empty name")
+			report.Skipped = append(report.Skipped, "integration: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping integration with empty name")
 			continue
 		}
 		prevIntegrations[i.Name] = i
@@ -213,8 +213,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	currIntegrations := make(map[string]facts.ExternalIntegration, len(current.Integrations))
 	for _, i := range current.Integrations {
 		if i.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("integration: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping integration with empty name")
+			report.Skipped = append(report.Skipped, "integration: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping integration with empty name")
 			continue
 		}
 		currIntegrations[i.Name] = i
@@ -239,8 +239,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	prevConfig := make(map[string]facts.ConfigVar, len(previous.Config))
 	for _, cv := range previous.Config {
 		if cv.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("config: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping config with empty name")
+			report.Skipped = append(report.Skipped, "config: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping config with empty name")
 			continue
 		}
 		prevConfig[cv.Name] = cv
@@ -249,8 +249,8 @@ func Compare(previous, current *facts.FactModel) DriftReport {
 	currConfig := make(map[string]facts.ConfigVar, len(current.Config))
 	for _, cv := range current.Config {
 		if cv.Name == "" {
-			report.Skipped = append(report.Skipped, fmt.Sprintf("config: empty name (skipped)"))
-			fmt.Fprintln(warnWriter, "WARN: drift: skipping config with empty name")
+			report.Skipped = append(report.Skipped, "config: empty name (skipped)")
+			_, _ = fmt.Fprintln(warnWriter, "WARN: drift: skipping config with empty name")
 			continue
 		}
 		currConfig[cv.Name] = cv
@@ -337,41 +337,41 @@ func (r DriftReport) Markdown() string {
 	var sb strings.Builder
 
 	sb.WriteString("# Drift Report\n\n")
-	sb.WriteString(fmt.Sprintf("Generated: %s\n", r.GeneratedAt.Format(time.RFC3339)))
-	sb.WriteString(fmt.Sprintf("Previous snapshot: %s\n", r.PreviousSnapshot.Format(time.RFC3339)))
-	sb.WriteString(fmt.Sprintf("Drift fraction: %.4f (threshold: %.4f)\n", r.DriftFraction, r.Threshold))
+	fmt.Fprintf(&sb, "Generated: %s\n", r.GeneratedAt.Format(time.RFC3339))
+	fmt.Fprintf(&sb, "Previous snapshot: %s\n", r.PreviousSnapshot.Format(time.RFC3339))
+	fmt.Fprintf(&sb, "Drift fraction: %.4f (threshold: %.4f)\n", r.DriftFraction, r.Threshold)
 
 	status := "OK"
 	if r.ExceededThreshold {
 		status = "EXCEEDED"
 	}
-	sb.WriteString(fmt.Sprintf("Status: %s\n", status))
+	fmt.Fprintf(&sb, "Status: %s\n", status)
 
 	if len(r.Added) > 0 {
-		sb.WriteString(fmt.Sprintf("\n## Added (%d)\n", len(r.Added)))
+		fmt.Fprintf(&sb, "\n## Added (%d)\n", len(r.Added))
 		for _, e := range r.Added {
-			sb.WriteString(fmt.Sprintf("- [%s] %s\n", e.Type, e.Name))
+			fmt.Fprintf(&sb, "- [%s] %s\n", e.Type, e.Name)
 		}
 	}
 
 	if len(r.Removed) > 0 {
-		sb.WriteString(fmt.Sprintf("\n## Removed (%d)\n", len(r.Removed)))
+		fmt.Fprintf(&sb, "\n## Removed (%d)\n", len(r.Removed))
 		for _, e := range r.Removed {
-			sb.WriteString(fmt.Sprintf("- [%s] %s\n", e.Type, e.Name))
+			fmt.Fprintf(&sb, "- [%s] %s\n", e.Type, e.Name)
 		}
 	}
 
 	if len(r.Modified) > 0 {
-		sb.WriteString(fmt.Sprintf("\n## Modified (%d)\n", len(r.Modified)))
+		fmt.Fprintf(&sb, "\n## Modified (%d)\n", len(r.Modified))
 		for _, e := range r.Modified {
-			sb.WriteString(fmt.Sprintf("- [%s] %s\n", e.Type, e.Name))
+			fmt.Fprintf(&sb, "- [%s] %s\n", e.Type, e.Name)
 		}
 	}
 
 	if len(r.Skipped) > 0 {
-		sb.WriteString(fmt.Sprintf("\n## Skipped (%d)\n", len(r.Skipped)))
+		fmt.Fprintf(&sb, "\n## Skipped (%d)\n", len(r.Skipped))
 		for _, s := range r.Skipped {
-			sb.WriteString(fmt.Sprintf("- %s\n", s))
+			fmt.Fprintf(&sb, "- %s\n", s)
 		}
 	}
 

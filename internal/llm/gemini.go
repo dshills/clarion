@@ -69,7 +69,7 @@ func (a *geminiAdapter) call(ctx context.Context, req LLMRequest) (LLMResponse, 
 	if err != nil {
 		return LLMResponse{}, 0, networkError("gemini", err)
 	}
-	defer httpResp.Body.Close()
+	defer func() { _ = httpResp.Body.Close() }()
 
 	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {

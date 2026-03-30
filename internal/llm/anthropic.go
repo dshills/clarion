@@ -68,7 +68,7 @@ func (a *anthropicAdapter) call(ctx context.Context, req LLMRequest) (LLMRespons
 	if err != nil {
 		return LLMResponse{}, 0, networkError("anthropic", err)
 	}
-	defer httpResp.Body.Close()
+	defer func() { _ = httpResp.Body.Close() }()
 
 	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {

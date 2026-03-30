@@ -311,8 +311,8 @@ func (v *astVisitor) extractEnvVar(call *ast.CallExpr, method string) {
 	pos := v.fset.Position(call.Pos())
 
 	cv := facts.ConfigVar{
-		Name:   key,
-		EnvKey: key,
+		Name:     key,
+		EnvKey:   key,
 		Required: method == "LookupEnv", // LookupEnv usually means required
 		Evidence: facts.Evidence{
 			SourceFiles:     []string{v.filePath},
@@ -416,10 +416,10 @@ func (v *astVisitor) findGoroutineJobs(f *ast.File) {
 			// Upgrade existing ticker-job to ConfidenceDirect, or add a new one.
 			upgraded := false
 			for i, job := range v.jobs {
-				if job.Name == "ticker-job" && job.Evidence.Inferred {
-					v.jobs[i].Evidence.ConfidenceScore = facts.ConfidenceDirect
-					v.jobs[i].Evidence.Inferred = false
-					v.jobs[i].Evidence.LineRanges = []facts.Range{{Start: pos.Line, End: pos.Line}}
+				if job.Name == "ticker-job" && job.Inferred {
+					v.jobs[i].ConfidenceScore = facts.ConfidenceDirect
+					v.jobs[i].Inferred = false
+					v.jobs[i].LineRanges = []facts.Range{{Start: pos.Line, End: pos.Line}}
 					upgraded = true
 					break
 				}

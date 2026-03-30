@@ -131,8 +131,8 @@ func TruncateToSize(fm *FactModel, maxBytes int) (*FactModel, int, error) {
 		fmt.Fprintf(os.Stderr, "  component %q: ~%d bytes\n", c.name, c.bytes)
 	}
 	return nil, dropped, fmt.Errorf(
-		"FactModel too large to send to LLM even after truncation (%d bytes). "+
-			"Consider scanning a subdirectory instead of the whole repository, or contact support.",
+		"FactModel too large to send to LLM even after truncation (%d bytes), "+
+			"consider scanning a subdirectory instead of the whole repository, or contact support",
 		len(serialized),
 	)
 }

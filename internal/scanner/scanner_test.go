@@ -431,10 +431,10 @@ func main() {
 
 func TestTickerDetection(t *testing.T) {
 	tests := []struct {
-		name         string
-		src          string
-		wantJobs     int
-		wantDirect   bool // expect ConfidenceDirect (goroutine+ticker)
+		name       string
+		src        string
+		wantJobs   int
+		wantDirect bool // expect ConfidenceDirect (goroutine+ticker)
 	}{
 		{
 			name: "simple time.NewTicker",
@@ -1038,18 +1038,17 @@ func generateSyntheticFile(pkg, file int) string {
 
 	for i := 0; i < 5; i++ {
 		sb.WriteString("func handler")
-		sb.WriteString(fmt.Sprintf("_%d_%d_%d", pkg, file, i))
+		fmt.Fprintf(&sb, "_%d_%d_%d", pkg, file, i)
 		sb.WriteString("(w http.ResponseWriter, r *http.Request) {}\n")
 	}
 
 	sb.WriteString("\nfunc setup() {\n")
 	for i := 0; i < 3; i++ {
 		route := fmt.Sprintf("/api/pkg%d/res%d", pkg, i)
-		sb.WriteString(fmt.Sprintf("\thttp.HandleFunc(%q, handler_%d_%d_%d)\n", route, pkg, file, i))
+		fmt.Fprintf(&sb, "\thttp.HandleFunc(%q, handler_%d_%d_%d)\n", route, pkg, file, i)
 	}
-	sb.WriteString(fmt.Sprintf("\t_ = os.Getenv(\"ENV_VAR_%d_%d\")\n", pkg, file))
-	sb.WriteString(fmt.Sprintf("\tdb, _ := sql.Open(\"postgres\", os.Getenv(\"DB_URL_%d\"))\n", pkg))
+	fmt.Fprintf(&sb, "\t_ = os.Getenv(\"ENV_VAR_%d_%d\")\n", pkg, file)
+	fmt.Fprintf(&sb, "\tdb, _ := sql.Open(\"postgres\", os.Getenv(\"DB_URL_%d\"))\n", pkg)
 	sb.WriteString("\t_ = db\n}\n")
 	return sb.String()
 }
-

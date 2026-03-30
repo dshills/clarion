@@ -27,6 +27,6 @@ func AcquireLock(outputDir string) (unlock func(), err error) {
 	}
 	_ = f.Close()
 
-	unlock = func() { os.Remove(lockPath) }
+	unlock = func() { _ = os.Remove(lockPath) }
 	return unlock, nil
 }

@@ -28,7 +28,7 @@ func loadGitignore(dir string) gitignore {
 	if err != nil {
 		return gitignore{}
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Pre-allocate with a reasonable capacity to avoid repeated slice growth.
 	gi := gitignore{patterns: make([]pattern, 0, 32)}

@@ -34,7 +34,7 @@ func newGenCmd() *cobra.Command {
 			// Pre-check: clarion-meta.json must exist.
 			metaPath := filepath.Join(flagOutput, "clarion-meta.json")
 			if _, err := os.Stat(metaPath); err != nil {
-				return fmt.Errorf("clarion-meta.json not found in %s. Run clarion pack enterprise first.", flagOutput)
+				return fmt.Errorf("clarion-meta.json not found in %s, run clarion pack enterprise first", flagOutput)
 			}
 
 			// 1. Validate section name.

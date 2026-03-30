@@ -351,7 +351,7 @@ func TestOpenAIAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write(openAISuccessResponse("Hello!", "gpt-4o", 20, 5))
+			_, _ = w.Write(openAISuccessResponse("Hello!", "gpt-4o", 20, 5))
 		}))
 		defer srv.Close()
 
@@ -389,12 +389,12 @@ func TestOpenAIAdapter(t *testing.T) {
 			n := atomic.AddInt32(&callCount, 1)
 			if n == 1 {
 				w.WriteHeader(http.StatusTooManyRequests)
-				w.Write([]byte(`{"error":"rate limited"}`))
+				_, _ = w.Write([]byte(`{"error":"rate limited"}`))
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write(openAISuccessResponse("retried!", "gpt-4o", 10, 3))
+			_, _ = w.Write(openAISuccessResponse("retried!", "gpt-4o", 10, 3))
 		}))
 		defer srv.Close()
 
@@ -422,7 +422,7 @@ func TestOpenAIAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&callCount, 1)
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error":"rate limited"}`))
+			_, _ = w.Write([]byte(`{"error":"rate limited"}`))
 		}))
 		defer srv.Close()
 
@@ -447,7 +447,7 @@ func TestOpenAIAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&callCount, 1)
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":"unauthorized"}`))
+			_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 		}))
 		defer srv.Close()
 
@@ -471,7 +471,7 @@ func TestOpenAIAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`not valid json`))
+			_, _ = w.Write([]byte(`not valid json`))
 		}))
 		defer srv.Close()
 
@@ -495,7 +495,7 @@ func TestOpenAIAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":0},"model":"gpt-4o"}`))
+			_, _ = w.Write([]byte(`{"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":0},"model":"gpt-4o"}`))
 		}))
 		defer srv.Close()
 
@@ -521,12 +521,12 @@ func TestOpenAIAdapter(t *testing.T) {
 			n := atomic.AddInt32(&callCount, 1)
 			if n == 1 {
 				w.WriteHeader(http.StatusServiceUnavailable)
-				w.Write([]byte(`{"error":"service unavailable"}`))
+				_, _ = w.Write([]byte(`{"error":"service unavailable"}`))
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write(openAISuccessResponse("ok", "gpt-4o", 10, 3))
+			_, _ = w.Write(openAISuccessResponse("ok", "gpt-4o", 10, 3))
 		}))
 		defer srv.Close()
 
@@ -580,7 +580,7 @@ func TestAnthropicAdapter(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write(anthropicSuccessResponse("Claude says hi!", "claude-3-5-sonnet-20241022", 15, 8))
+			_, _ = w.Write(anthropicSuccessResponse("Claude says hi!", "claude-3-5-sonnet-20241022", 15, 8))
 		}))
 		defer srv.Close()
 
@@ -615,12 +615,12 @@ func TestAnthropicAdapter(t *testing.T) {
 			n := atomic.AddInt32(&callCount, 1)
 			if n == 1 {
 				w.WriteHeader(http.StatusTooManyRequests)
-				w.Write([]byte(`{"error":"rate limited"}`))
+				_, _ = w.Write([]byte(`{"error":"rate limited"}`))
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write(anthropicSuccessResponse("retried!", "claude-3-5-sonnet-20241022", 10, 4))
+			_, _ = w.Write(anthropicSuccessResponse("retried!", "claude-3-5-sonnet-20241022", 10, 4))
 		}))
 		defer srv.Close()
 
@@ -648,7 +648,7 @@ func TestAnthropicAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&callCount, 1)
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error":"rate limited"}`))
+			_, _ = w.Write([]byte(`{"error":"rate limited"}`))
 		}))
 		defer srv.Close()
 
@@ -673,7 +673,7 @@ func TestAnthropicAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&callCount, 1)
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":"unauthorized"}`))
+			_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 		}))
 		defer srv.Close()
 
@@ -697,7 +697,7 @@ func TestAnthropicAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`not json`))
+			_, _ = w.Write([]byte(`not json`))
 		}))
 		defer srv.Close()
 
@@ -721,7 +721,7 @@ func TestAnthropicAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"content":[],"usage":{"input_tokens":5,"output_tokens":0},"model":"claude-3-5-sonnet-20241022"}`))
+			_, _ = w.Write([]byte(`{"content":[],"usage":{"input_tokens":5,"output_tokens":0},"model":"claude-3-5-sonnet-20241022"}`))
 		}))
 		defer srv.Close()
 
@@ -746,7 +746,7 @@ func TestAnthropicAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&callCount, 1)
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(`{"error":"forbidden"}`))
+			_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 		}))
 		defer srv.Close()
 
@@ -799,7 +799,7 @@ func TestGeminiAdapter(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write(geminiSuccessResponse("Gemini says hi!", "gemini-2.0-flash", 12, 6))
+			_, _ = w.Write(geminiSuccessResponse("Gemini says hi!", "gemini-2.0-flash", 12, 6))
 		}))
 		defer srv.Close()
 
@@ -834,12 +834,12 @@ func TestGeminiAdapter(t *testing.T) {
 			n := atomic.AddInt32(&callCount, 1)
 			if n == 1 {
 				w.WriteHeader(http.StatusTooManyRequests)
-				w.Write([]byte(`{"error":"rate limited"}`))
+				_, _ = w.Write([]byte(`{"error":"rate limited"}`))
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write(geminiSuccessResponse("retried!", "gemini-2.0-flash", 10, 4))
+			_, _ = w.Write(geminiSuccessResponse("retried!", "gemini-2.0-flash", 10, 4))
 		}))
 		defer srv.Close()
 
@@ -867,7 +867,7 @@ func TestGeminiAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&callCount, 1)
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error":"rate limited"}`))
+			_, _ = w.Write([]byte(`{"error":"rate limited"}`))
 		}))
 		defer srv.Close()
 
@@ -892,7 +892,7 @@ func TestGeminiAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&callCount, 1)
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":"unauthorized"}`))
+			_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 		}))
 		defer srv.Close()
 
@@ -916,7 +916,7 @@ func TestGeminiAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`not json`))
+			_, _ = w.Write([]byte(`not json`))
 		}))
 		defer srv.Close()
 
@@ -940,7 +940,7 @@ func TestGeminiAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"candidates":[],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":0}}`))
+			_, _ = w.Write([]byte(`{"candidates":[],"usageMetadata":{"promptTokenCount":5,"candidatesTokenCount":0}}`))
 		}))
 		defer srv.Close()
 
@@ -965,7 +965,7 @@ func TestGeminiAdapter(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&callCount, 1)
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(`{"error":"forbidden"}`))
+			_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 		}))
 		defer srv.Close()
 
@@ -1023,7 +1023,7 @@ func TestMockAdapter(t *testing.T) {
 	t.Run("CallCount incremented on each call", func(t *testing.T) {
 		m := &MockAdapter{}
 		for i := 0; i < 5; i++ {
-			m.Call(context.Background(), LLMRequest{Prompt: "test"})
+			_, _ = m.Call(context.Background(), LLMRequest{Prompt: "test"})
 		}
 		if m.CallCount != 5 {
 			t.Errorf("CallCount = %d, want 5", m.CallCount)
@@ -1209,7 +1209,7 @@ func TestPipeline(t *testing.T) {
 		// Use a nil client to cause a network error, or use a closed server.
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`internal error`))
+			_, _ = w.Write([]byte(`internal error`))
 		}))
 		srv.Close() // close immediately so connections fail
 

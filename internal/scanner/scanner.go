@@ -135,13 +135,7 @@ func (s *scanner) Scan(root string) (*facts.FactModel, error) {
 			defer func() { <-sem }()
 
 			r := analyzeGoFile(filePath)
-			results[idx] = astResult{
-				endpoints:    r.endpoints,
-				datastores:   r.datastores,
-				jobs:         r.jobs,
-				integrations: r.integrations,
-				config:       r.config,
-			}
+			results[idx] = astResult(r)
 		}(i, f)
 	}
 	wg.Wait()
