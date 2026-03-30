@@ -6,23 +6,31 @@ import (
 	"log"
 )
 
-// maxOutputTokensPerCall caps the max_tokens sent to the provider on any
-// single call. Current frontier models (gpt-4o, gpt-4o-mini, claude-3.*,
-// claude-haiku-4-5) all support at least 4096 completion tokens. Using the
-// full budget.Remaining() as the API max_tokens parameter would exceed
-// per-model limits when the budget is large (e.g. the default 100 000).
-const maxOutputTokensPerCall = 4096
+// defaultMaxOutputTokensPerCall caps the max_tokens sent to the provider on
+// any single call. Frontier models (gpt-4o, claude-sonnet-4-*, gemini-2.*)
+// support 16384+ completion tokens. Override via CLARION_LLM_MAX_OUTPUT_TOKENS.
+const defaultMaxOutputTokensPerCall = 16384
 
 // Pipeline runs a sequence of LLM stages within a token budget.
 type Pipeline struct {
-	adapter ProviderAdapter
-	budget  *BudgetTracker
-	verbose bool
+	adapter         ProviderAdapter
+	budget          *BudgetTracker
+	verbose         bool
+	maxOutputTokens int
 }
 
 // NewPipeline creates a Pipeline with the given adapter, budget, and verbosity.
 func NewPipeline(adapter ProviderAdapter, budget *BudgetTracker, verbose bool) *Pipeline {
-	return &Pipeline{adapter: adapter, budget: budget, verbose: verbose}
+	return &Pipeline{adapter: adapter, budget: budget, verbose: verbose, maxOutputTokens: defaultMaxOutputTokensPerCall}
+}
+
+// NewPipelineWithConfig creates a Pipeline using the full Config for output token limits.
+func NewPipelineWithConfig(adapter ProviderAdapter, budget *BudgetTracker, verbose bool, cfg Config) *Pipeline {
+	maxOut := cfg.MaxOutputTokens
+	if maxOut <= 0 {
+		maxOut = defaultMaxOutputTokensPerCall
+	}
+	return &Pipeline{adapter: adapter, budget: budget, verbose: verbose, maxOutputTokens: maxOut}
 }
 
 // Run executes the pipeline stages in order, respecting the token budget.
@@ -55,8 +63,8 @@ func (p *Pipeline) Run(ctx context.Context, stages []PipelineStage) ([]StageResu
 		}
 
 		maxTokens := p.budget.Remaining()
-		if maxTokens > maxOutputTokensPerCall {
-			maxTokens = maxOutputTokensPerCall
+		if maxTokens > p.maxOutputTokens {
+			maxTokens = p.maxOutputTokens
 		}
 		resp, err := p.adapter.Call(ctx, LLMRequest{
 			Prompt:    stage.Prompt,

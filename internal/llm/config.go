@@ -9,10 +9,11 @@ import (
 
 // Config holds LLM provider configuration loaded from environment variables.
 type Config struct {
-	Provider    string `json:"provider"`     // CLARION_LLM_PROVIDER
-	Model       string `json:"model"`        // CLARION_LLM_MODEL
-	APIKey      string `json:"-"`            // provider-specific key — never serialized
-	TokenBudget int    `json:"token_budget"` // CLARION_LLM_TOKEN_BUDGET; default 100000
+	Provider        string `json:"provider"`          // CLARION_LLM_PROVIDER
+	Model           string `json:"model"`             // CLARION_LLM_MODEL
+	APIKey          string `json:"-"`                 // provider-specific key — never serialized
+	TokenBudget     int    `json:"token_budget"`      // CLARION_LLM_TOKEN_BUDGET; default 100000
+	MaxOutputTokens int    `json:"max_output_tokens"` // CLARION_LLM_MAX_OUTPUT_TOKENS; default 8192
 }
 
 // apiKeyEnvVar returns the conventional environment variable name for the
@@ -34,9 +35,10 @@ func apiKeyEnvVar(provider string) string {
 // All validation errors are accumulated into a single multi-line error.
 func LoadConfig() (Config, error) {
 	cfg := Config{
-		Provider:    os.Getenv("CLARION_LLM_PROVIDER"),
-		Model:       os.Getenv("CLARION_LLM_MODEL"),
-		TokenBudget: 100000,
+		Provider:        os.Getenv("CLARION_LLM_PROVIDER"),
+		Model:           os.Getenv("CLARION_LLM_MODEL"),
+		TokenBudget:     100000,
+		MaxOutputTokens: defaultMaxOutputTokensPerCall,
 	}
 
 	var errs []string
@@ -66,6 +68,17 @@ func LoadConfig() (Config, error) {
 			errs = append(errs, "CLARION_LLM_TOKEN_BUDGET must be > 0")
 		} else {
 			cfg.TokenBudget = n
+		}
+	}
+
+	if raw := os.Getenv("CLARION_LLM_MAX_OUTPUT_TOKENS"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			errs = append(errs, "CLARION_LLM_MAX_OUTPUT_TOKENS must be an integer")
+		} else if n <= 0 {
+			errs = append(errs, "CLARION_LLM_MAX_OUTPUT_TOKENS must be > 0")
+		} else {
+			cfg.MaxOutputTokens = n
 		}
 	}
 

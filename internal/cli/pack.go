@@ -103,7 +103,7 @@ func newPackEnterpriseCmd() *cobra.Command {
 				return fmt.Errorf("LLM adapter: %w", err)
 			}
 			budget := llm.NewBudgetTracker(cfg.TokenBudget)
-			pipeline := llm.NewPipeline(adapter, budget, flagVerbose)
+			pipeline := llm.NewPipelineWithConfig(adapter, budget, flagVerbose, cfg)
 
 			// 8. Initialise the generator (parses embedded templates).
 			gen, err := generator.New(pipeline)
